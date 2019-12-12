@@ -1975,12 +1975,9 @@ BOOL CheckIfExitIsGood (AActor *self)
 			if (sv_skipsecrets) unfound_secrets = 0;
 
 			if (unkilled_monsters > 0 || unfound_secrets > 0) {
-				// 200 should be more than enough for all chars here:
-				char msg[200], *m;
+				char reuse[100], *m;
 
-				m = msg;
-				m += sprintf(m, "Cannot exit the level with");
-
+				m = reuse;
 				if (unkilled_monsters > 0) {
 					m += sprintf(m, " %d unkilled %s",
 							unkilled_monsters,
@@ -1994,7 +1991,16 @@ BOOL CheckIfExitIsGood (AActor *self)
 				}
 				m += sprintf(m, ".\n");
 
-				C_MidPrint (msg, self->player, 6);
+				char plyrmsg[200];
+				strcpy(plyrmsg, "Cannot exit the level with");
+				strcat(plyrmsg, reuse);
+				C_MidPrint (plyrmsg, self->player, 5);
+
+				// write message to server:
+				char srvmsg[256 + 100];
+				sprintf(srvmsg, "%s attempted to exit the level with", self->player->userinfo.netname.c_str());
+				strcat(srvmsg, reuse);
+				Printf (PRINT_HIGH, srvmsg);
 
 				// don't allow exit:
 				return false;
