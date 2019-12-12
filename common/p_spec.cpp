@@ -1443,13 +1443,14 @@ P_CrossSpecialLine
 
 	TeleportSide = side;
 
-	LineSpecials[line->special] (line, thing, line->args[0],
+	if(LineSpecials[line->special] (line, thing, line->args[0],
 					line->args[1], line->args[2],
-					line->args[3], line->args[4]);
+					line->args[3], line->args[4]))
+	{
+		P_HandleSpecialRepeat(line);
 
-	P_HandleSpecialRepeat(line);
-
-	OnActivatedLine(line, thing, side, 0);
+		OnActivatedLine(line, thing, side, 0);
+	}
 }
 
 //
@@ -1479,18 +1480,19 @@ P_ShootSpecialLine
 
 	//TeleportSide = side;
 
-	LineSpecials[line->special] (line, thing, line->args[0],
+	if(LineSpecials[line->special] (line, thing, line->args[0],
 					line->args[1], line->args[2],
-					line->args[3], line->args[4]);
-
-	P_HandleSpecialRepeat(line);
-
-	OnActivatedLine(line, thing, 0, 2);
-
-	if(serverside)
+					line->args[3], line->args[4]))
 	{
-		P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL, true);
-		OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+		P_HandleSpecialRepeat(line);
+
+		OnActivatedLine(line, thing, 0, 2);
+
+		if(serverside)
+		{
+			P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL, true);
+			OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+		}
 	}
 }
 
