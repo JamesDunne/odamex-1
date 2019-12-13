@@ -1642,7 +1642,9 @@ P_PushSpecialLine
     return true;
 }
 
-
+#ifdef SERVER_APP
+EXTERN_CVAR(sv_coop_completionist)
+#endif
 
 //
 // P_PlayerInSpecialSector
@@ -1783,6 +1785,26 @@ void P_PlayerInSpecialSector (player_t *player)
 #ifdef CLIENT_APP
 			if (player->mo == consoleplayer().camera)
 				C_RevealSecret();
+#endif
+#ifdef SERVER_APP
+			if (serverside && sv_gametype == GM_COOP && sv_coop_completionist)
+			{
+				char msg[256 + 32];
+				sprintf(msg, "%s revealed a secret!  %d/%d\n",
+						player->userinfo.netname.c_str(),
+						level.found_secrets,
+						level.total_secrets);
+
+				for (Players::iterator itr = players.begin();itr != players.end();++itr)
+				{
+					if (!(itr->ingame()))
+						continue;
+
+					C_MidPrint(msg, &*itr, 5);
+				}
+
+				Printf(PRINT_HIGH, msg);
+			}
 #endif
 		}
 	}
