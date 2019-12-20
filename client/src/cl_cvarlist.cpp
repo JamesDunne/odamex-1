@@ -336,6 +336,9 @@ CVAR(				cl_run, "1", "Always run",
 CVAR(				cl_showspawns, "0", "Show spawn points as particle fountains",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE | CVAR_LATCH)
 
+CVAR(				cl_rcon_hide, "0", "Hide rcon messages from server",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 // Netdemo Preferences
 // --------------------
 

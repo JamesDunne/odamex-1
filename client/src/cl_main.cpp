@@ -1849,6 +1849,7 @@ void CL_TryToConnect(DWORD server_token)
 }
 
 EXTERN_CVAR (show_messages)
+EXTERN_CVAR (cl_rcon_hide)
 
 //
 // CL_Print
@@ -1857,6 +1858,13 @@ void CL_Print (void)
 {
 	byte level = MSG_ReadByte();
 	const char *str = MSG_ReadString();
+
+	if (cl_rcon_hide) {
+		// hide rcon messages from server:
+		if (strlen(str) >= 6 && strncmp(str, "rcon: ", 6) == 0) {
+			return;
+		}
+	}
 
 	if (level == PRINT_CHAT)
 		Printf(level, "\\c*%s", str);
