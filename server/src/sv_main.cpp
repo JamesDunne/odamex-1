@@ -3321,7 +3321,7 @@ void SV_SendPackets()
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		elements.push_back(&(*it));
 
-	#pragma omp parallel shared(elements)
+	#pragma omp parallel default(none) shared(elements)
 	{
 		#pragma omp for
 		for (size_t i = 0; i < elements.size(); ++i)

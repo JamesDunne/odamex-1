@@ -491,8 +491,8 @@ int NET_GetPacket (void)
 
 int NET_SendPacket (buf_t &buf, netadr_t &to)
 {
-    int                   ret;
-    struct sockaddr_in    addr;
+	int                   ret;
+	struct sockaddr_in    addr;
 
 	// [SL] 2011-07-06 - Don't try to send a packet if we're not really connected
 	// (eg, a netdemo is being played back)
@@ -502,28 +502,31 @@ int NET_SendPacket (buf_t &buf, netadr_t &to)
 		return 0;
 	}
 
-    NetadrToSockadr (&to, &addr);
+	#pragma omp critical
+	{
+		NetadrToSockadr (&to, &addr);
 
-	ret = sendto (inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
+		ret = sendto (inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
 
-	buf.clear();
+		buf.clear();
+	}
 
-    if (ret == -1)
-    {
+	if (ret == -1)
+	{
 #ifdef _WIN32
-          int err = WSAGetLastError();
+		  int err = WSAGetLastError();
 
-          // wouldblock is silent
-          if (err == WSAEWOULDBLOCK)
-              return 0;
+		  // wouldblock is silent
+		  if (err == WSAEWOULDBLOCK)
+			  return 0;
 #else
-          if (errno == EWOULDBLOCK)
-              return 0;
-          if (errno == ECONNREFUSED)
-              return 0;
-          Printf (PRINT_HIGH, "NET_SendPacket: %s\n", strerror(errno));
+		  if (errno == EWOULDBLOCK)
+			  return 0;
+		  if (errno == ECONNREFUSED)
+			  return 0;
+		  Printf (PRINT_HIGH, "NET_SendPacket: %s\n", strerror(errno));
 #endif
-    }
+	}
 
 	return ret;
 }

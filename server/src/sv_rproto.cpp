@@ -44,6 +44,7 @@ EXTERN_CVAR (sv_latency)
 
 buf_t plain(MAX_UDP_PACKET); // denis - todo - call_terms destroys these statics on quit
 buf_t sendd(MAX_UDP_PACKET);
+#pragma omp threadprivate(plain,sendd)
 
 //
 // SV_CompressPacket
@@ -53,46 +54,49 @@ buf_t sendd(MAX_UDP_PACKET);
 // if 0'd sections
 void SV_CompressPacket(buf_t &send, unsigned int reserved, client_t *cl)
 {
-	size_t orig_size = send.size();
-
-	if(plain.maxsize() < send.maxsize())
-		plain.resize(send.maxsize());
-	
-	plain.setcursize(send.size());
-	
-	memcpy(plain.ptr(), send.ptr(), send.size());
-
-	byte method = 0;
-
-	int need_gap = 2; // for svc_compressed and method, below
-#if 0
-	if(MSG_CompressAdaptive(cl->compressor.get_codec(), send, reserved, need_gap))
+	#pragma omp critical
 	{
-		reserved += need_gap;
-		need_gap = 0;
+		size_t orig_size = send.size();
 
-		method |= adaptive_mask;
+		if(plain.maxsize() < send.maxsize())
+			plain.resize(send.maxsize());
 
-		if(cl->compressor.get_codec_id())
-			method |= adaptive_select_mask;
-	}
-#endif
-	//DPrintf("SV_CompressPacket stage 2: %x %d\n", (int)method, (int)send.size());
+		plain.setcursize(send.size());
 
-	if(MSG_CompressMinilzo(send, reserved, need_gap))
-		method |= minilzo_mask;
+		memcpy(plain.ptr(), send.ptr(), send.size());
 
-	if((method & adaptive_mask) || (method & minilzo_mask))
-	{
+		byte method = 0;
+
+		int need_gap = 2; // for svc_compressed and method, below
 #if 0
-		if(cl->compressor.packet_sent(cl->sequence - 1, plain.ptr() + sizeof(int), plain.size() - sizeof(int)))
-			method |= adaptive_record_mask;
-#endif
-		send.ptr()[sizeof(int)] = svc_compressed;
-		send.ptr()[sizeof(int) + 1] = method;
-	}
+		if(MSG_CompressAdaptive(cl->compressor.get_codec(), send, reserved, need_gap))
+		{
+			reserved += need_gap;
+			need_gap = 0;
 
-	//DPrintf("SV_CompressPacket %x %d (from plain %d)\n", (int)method, (int)send.size(), (int)orig_size);
+			method |= adaptive_mask;
+
+			if(cl->compressor.get_codec_id())
+				method |= adaptive_select_mask;
+		}
+#endif
+		//DPrintf("SV_CompressPacket stage 2: %x %d\n", (int)method, (int)send.size());
+
+		if(MSG_CompressMinilzo(send, reserved, need_gap))
+			method |= minilzo_mask;
+
+		if((method & adaptive_mask) || (method & minilzo_mask))
+		{
+#if 0
+			if(cl->compressor.packet_sent(cl->sequence - 1, plain.ptr() + sizeof(int), plain.size() - sizeof(int)))
+				method |= adaptive_record_mask;
+#endif
+			send.ptr()[sizeof(int)] = svc_compressed;
+			send.ptr()[sizeof(int) + 1] = method;
+		}
+
+		//DPrintf("SV_CompressPacket %x %d (from plain %d)\n", (int)method, (int)send.size(), (int)orig_size);
+	}
 }
 
 #ifdef SIMULATE_LATENCY
