@@ -73,6 +73,10 @@ add_executable(odasrv
   ${SERVER_SOURCES} ${SERVER_HEADERS}
   ${SERVER_WIN32_HEADERS} ${SERVER_WIN32_RESOURCES})
 
+if(OpenMP_FOUND)
+  target_link_libraries(odasrv omp)
+endif()
+
 if (USE_MINIUPNP)
   target_link_libraries(odasrv ${MINIUPNPC_STATIC_LIBRARIES})
 endif()

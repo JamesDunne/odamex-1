@@ -3316,8 +3316,21 @@ void SV_SendPackets()
 	if (players.empty())
 		return;
 
+#ifdef _OPENMP
+	std::vector<player_s*> elements;
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+		elements.push_back(&(*it));
+
+	#pragma omp parallel shared(elements)
+	{
+		#pragma omp for
+		for (size_t i = 0; i < elements.size(); ++i)
+			SV_SendPacket(*elements[i]);
+	}
+#else
 	static size_t fair_send = 0;
 	size_t num_players = players.size();
+
 
 	// Wrap the starting index around if necessary.
 	if (fair_send >= num_players)
@@ -3342,6 +3355,7 @@ void SV_SendPackets()
 
 	// Advance the send index.
 	fair_send++;
+#endif
 }
 
 void SV_SendPlayerStateUpdate(client_t *client, player_t *player)

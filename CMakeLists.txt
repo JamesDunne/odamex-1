@@ -22,7 +22,8 @@ cmake_dependent_option( ENABLE_PORTMIDI "Enable portmidi support" 1 BUILD_CLIENT
 cmake_dependent_option( USE_MINIUPNP "Build with UPnP support" 1 BUILD_SERVER 0 )
 
 project(Odamex)
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.14)
+set(CMAKE_CXX_STANDARD 11)
 
 set(PROJECT_VERSION 0.8.2)
 set(PROJECT_COPYRIGHT "2006-2019")
@@ -112,6 +113,40 @@ macro(define_platform)
 endmacro(define_platform)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
+
+option(USE_OpenMP "Use OpenMP to enable <omp.h>" ON)
+
+# Find OpenMP
+if(APPLE AND USE_OpenMP)
+  if(CMAKE_C_COMPILER_ID MATCHES "Clang")
+    set(OpenMP_C "${CMAKE_C_COMPILER}")
+    set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp -Wno-unused-command-line-argument")
+    set(OpenMP_C_LIB_NAMES "libomp" "libgomp" "libiomp5")
+    set(OpenMP_libomp_LIBRARY ${OpenMP_C_LIB_NAMES})
+    set(OpenMP_libgomp_LIBRARY ${OpenMP_C_LIB_NAMES})
+    set(OpenMP_libiomp5_LIBRARY ${OpenMP_C_LIB_NAMES})
+  endif()
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(OpenMP_CXX "${CMAKE_CXX_COMPILER}")
+    set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -Wno-unused-command-line-argument")
+    set(OpenMP_CXX_LIB_NAMES "libomp" "libgomp" "libiomp5")
+    set(OpenMP_libomp_LIBRARY ${OpenMP_CXX_LIB_NAMES})
+    set(OpenMP_libgomp_LIBRARY ${OpenMP_CXX_LIB_NAMES})
+    set(OpenMP_libiomp5_LIBRARY ${OpenMP_CXX_LIB_NAMES})
+  endif()
+endif()
+
+if(USE_OpenMP)
+  find_package(OpenMP REQUIRED)
+endif()
+
+if(OpenMP_FOUND)
+  include_directories("/usr/local/include")
+  link_directories("/usr/local/lib")
+  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+  set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif(OpenMP_FOUND)
 
 # git describe
 include(GetGitRevisionDescription)
