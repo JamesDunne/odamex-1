@@ -37,6 +37,7 @@
 #include "d_player.h"
 #include "r_defs.h"
 #include "i_system.h"
+#include "c_pch.h"
 
 IMPLEMENT_CLASS (DConsoleCommand, DObject)
 IMPLEMENT_CLASS (DConsoleAlias, DConsoleCommand)

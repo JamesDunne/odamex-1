@@ -24,6 +24,7 @@
 
 
 #include <sstream>
+#include <iomanip>
 #include <string>
 #include <algorithm>
 #include <vector>
@@ -48,6 +49,7 @@
 #include "p_acs.h"
 #include "p_ctf.h"
 #include "p_local.h"
+#include "p_lnspec.h"
 #include "p_mobj.h"
 #include "p_saveg.h"
 #include "p_setup.h"
@@ -274,6 +276,179 @@ BEGIN_COMMAND (forcenextmap) {
 BEGIN_COMMAND (restart) {
 	warmup.restart();
 } END_COMMAND (restart)
+
+
+void P_TranslateLineDef (line_t *ld, maplinedef_t *mld);
+
+BEGIN_COMMAND (m_tag)
+{
+	if (argc < 3) {
+		Printf (PRINT_HIGH, "m_tag <tag> <special> [flags]\n");
+		return;
+	}
+
+	int tag = atoi(argv[1]);
+	if (tag <= 0) {
+		return;
+	}
+
+	int special = atoi(argv[2]);
+	if (special < 0 || special > 255) {
+		Printf (PRINT_HIGH, "special must be between 0 and 255\n");
+		return;
+	}
+
+	maplinedef_t mld;
+	mld.special = special;
+	mld.tag = tag;
+	mld.flags = 0;
+
+	if (argc >= 4) {
+		mld.flags = atoi(argv[3]);
+	}
+
+	try {
+		line_t ld;
+		P_TranslateLineDef(&ld, &mld);
+
+		DPrintf("specials[%d](null, null, %d, %d, %d, %d, %d)\n",
+				ld.special,
+				ld.args[0], ld.args[1], ld.args[2], ld.args[3], ld.args[4]
+		);
+
+		BOOL result = LineSpecials[ld.special](NULL, NULL, ld.args[0], ld.args[1], ld.args[2], ld.args[3], ld.args[4]);
+		if (!result) {
+			DPrintf("special returned false\n");
+		}
+	} catch (CRecoverableError &e) {
+		// catches CRecoverableError thrown from I_Error()
+		Printf(PRINT_HIGH, "special threw an exception: %s\n", e.GetMsg().c_str());
+	}
+}
+END_COMMAND (m_tag)
+
+BEGIN_COMMAND (m_stop)
+{
+	if (argc < 2) {
+		Printf (PRINT_HIGH, "m_stop <tag>\n");
+		return;
+	}
+
+	int tag = atoi(argv[1]);
+	if (tag <= 0) {
+		return;
+	}
+
+	int secnum = -1;
+	while ((secnum = P_FindSectorFromTag (tag,secnum)) >= 0)
+	{
+		bool stopped_floor = false;
+		bool stopped_ceiling = false;
+		bool stopped_lighting = false;
+
+		std::ostringstream msg;
+		msg << "stopped sector " << secnum << " ";
+
+		sector_t* sec = &sectors[secnum];
+		if (sec->floordata) {
+			// destroy floor actor:
+			try {
+				sec->floordata->Destroy();
+				sec->floordata = NULL;
+				stopped_floor = true;
+				msg << "floor";
+			} catch (CRecoverableError &e) {
+				// catches CRecoverableError thrown from I_Error()
+				Printf(PRINT_HIGH, "sector floor thinker Destroy() threw an exception: %s\n", e.GetMsg().c_str());
+			}
+		}
+		if (sec->ceilingdata) {
+			// destroy ceiling actor:
+			try {
+				sec->ceilingdata->Destroy();
+				sec->ceilingdata = NULL;
+				stopped_ceiling = true;
+				if (stopped_floor) msg << ", ";
+				msg << "ceiling";
+			} catch (CRecoverableError &e) {
+				// catches CRecoverableError thrown from I_Error()
+				Printf(PRINT_HIGH, "sector ceiling thinker Destroy() threw an exception: %s\n", e.GetMsg().c_str());
+			}
+		}
+		if (sec->lightingdata) {
+			// destroy lighting actor:
+			try {
+				sec->lightingdata->Destroy();
+				sec->lightingdata = NULL;
+				stopped_lighting = true;
+				if (stopped_floor || stopped_ceiling) msg << ", ";
+				msg << "lighting";
+			} catch (CRecoverableError &e) {
+				// catches CRecoverableError thrown from I_Error()
+				Printf(PRINT_HIGH, "sector lighting thinker Destroy() threw an exception: %s\n", e.GetMsg().c_str());
+			}
+		}
+
+		if (stopped_floor || stopped_ceiling || stopped_lighting) {
+			msg << ".\n";
+			Printf(PRINT_HIGH, msg.str().c_str());
+		}
+	}
+}
+END_COMMAND (m_stop)
+
+BEGIN_COMMAND (m_tagspecials)
+{
+	if (argc < 2) {
+		Printf (PRINT_HIGH, "m_tagspecials <tag>\n");
+		return;
+	}
+
+	int tag = atoi(argv[1]);
+	if (tag <= 0) {
+		return;
+	}
+
+	// find all lines that use this tag and track their map_specials:
+	std::set<short> specials;
+	for (int i = 0; i < numlines; i++) {
+		if (tag != lines[i].map_tag) continue;
+
+		specials.insert(lines[i].map_special);
+	}
+
+	// build comma-delimited list of specials:
+	std::ostringstream msg;
+	msg << "tag " << tag << " has " << specials.size() << " specials";
+
+	for (std::set<short>::const_iterator it = specials.cbegin(); it != specials.cend(); it++) {
+		short special = *it;
+		std::string P_LineSpecialName(short special);
+
+		msg << "\n  " << std::setw(3) << (int) special;
+		msg << ": " << P_LineSpecialName(special);
+	}
+	msg << "\n";
+
+	// print message:
+	Printf(PRINT_HIGH, msg.str().c_str());
+}
+END_COMMAND (m_tagspecials)
+
+std::string P_LineSpecialName(short special);
+
+BEGIN_COMMAND (m_specials)
+{
+	// build comma-delimited list of specials:
+	for (short special = 1; special <= 141; special++) {
+		std::ostringstream msg;
+		msg << std::setw(3) << (int) special;
+		msg << ": " << P_LineSpecialName(special) << "\n";
+
+		Printf(PRINT_HIGH, msg.str().c_str());
+	}
+}
+END_COMMAND (m_specials)
 
 void SV_ClientFullUpdate(player_t &pl);
 void SV_CheckTeam(player_t &pl);
