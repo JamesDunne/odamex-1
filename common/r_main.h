@@ -85,14 +85,14 @@ argb_t R_GetSectorBlend();
 
 // Lighting constants.
 // Now why not 32 levels here?
-#define LIGHTLEVELS 			16
-#define LIGHTSEGSHIFT			 4
+#define LIGHTLEVELS 			256
+#define LIGHTSEGSHIFT			0	// [jsd] number of bits to shr off from lightlevel (max 256)
 
 #define MAXLIGHTSCALE			48
-#define LIGHTSCALEMULBITS		 8	// [RH] for hires lighting fix
+#define LIGHTSCALEMULBITS		8	// [RH] for hires lighting fix
 #define LIGHTSCALESHIFT 		(12+LIGHTSCALEMULBITS)
-#define MAXLIGHTZ			   128
-#define LIGHTZSHIFT 			20
+#define MAXLIGHTZ				128
+#define LIGHTZSHIFT 			(18+(LIGHTSEGSHIFT/2))
 
 // [RH] Changed from shaderef_t* to int.
 extern int				scalelight[LIGHTLEVELS][MAXLIGHTSCALE];

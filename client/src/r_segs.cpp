@@ -147,9 +147,9 @@ int R_OrthogonalLightnumAdjustment()
     if (!foggy && !(level.flags & LEVEL_EVENLIGHTING))
 	{
 		if (curline->linedef->slopetype == ST_HORIZONTAL)
-			return -1;
+			return -(1 << (4 - LIGHTSEGSHIFT));
 		else if (curline->linedef->slopetype == ST_VERTICAL)
-			return 1;
+			return (1 << (4 - LIGHTSEGSHIFT));
 	}
 	
 	return 0;	// no adjustment for diagonal lines
