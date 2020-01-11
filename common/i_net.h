@@ -45,6 +45,10 @@
 extern int   localport;
 extern int   msg_badread;
 
+#if SERVER_APP
+extern int sv_messages[256];
+#endif
+
 // network message info
 struct msg_info_t
 {

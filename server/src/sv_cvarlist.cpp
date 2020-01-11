@@ -102,6 +102,10 @@ CVAR(			sv_loopepisode, "0", "Determines whether Doom 1 episodes carry over",
 CVAR_FUNC_DECL(	sv_shufflemaplist, "0", "Randomly shuffle the maplist",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
+CVAR(			sv_histogram, "0", "Server prints histogram of message types sent out every N tics; 0 to disable",
+				CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
+
+
 // Network settings
 // ----------------
 

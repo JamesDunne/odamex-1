@@ -4646,6 +4646,7 @@ bool SV_Frozen()
 	return sv_emptyfreeze && players.empty() && gamestate == GS_LEVEL;
 }
 
+EXTERN_CVAR(sv_histogram)
 
 //
 // SV_StepTics
@@ -4673,7 +4674,60 @@ void SV_StepTics(QWORD count)
 		if (TicCount++ >= 35)
 		{
 			SV_PlayerTimes();
+
 			TicCount = 0;
+		}
+
+		// [jsd]: histogram mode to display count of messages sent to all clients every N tics.
+		const int histogram = sv_histogram.asInt();
+		if (histogram >= 35) {
+			static int histtics = 0;
+			if (histtics++ >= histogram) {
+				histtics = 0;
+
+				int max = 0;
+				int sum = 0;
+				for (int i = 0; i <= svc_resetmap; i++) {
+					sum += sv_messages[i];
+					if (sv_messages[i] > max)
+						max = sv_messages[i];
+				}
+
+				std::ostringstream o;
+				const int height = 10;
+				const int step = MAX(1, (max / height));
+				o << "max: " << max << " step: " << step << " sum: " << sum << "\n";
+				for (int j = height; j >= 1; j--) {
+					int h = j * step;
+					for (int i = 0; i <= svc_resetmap; i++) {
+						if (sv_messages[i] >= h)
+							o << "#";
+						else
+							o << " ";
+					}
+					o << "\n";
+				}
+
+				// add labels under each bucket:
+				for (int i = 0; i <= svc_resetmap; i++) {
+					o << (char) ((i / 10) + '0');
+				}
+				o << "\n";
+				for (int i = 0; i <= svc_resetmap; i++) {
+					o << (char) ((i % 10) + '0');
+				}
+				o << "\n";
+				printf("%s\n", o.str().c_str());
+
+				for (int i = 0; i < 256; i++) {
+					sv_messages[i] = 0;
+				}
+			}
+		} else {
+			// keep message counts from climbing when not watching histogram:
+			for (int i = 0; i < 256; i++) {
+				sv_messages[i] = 0;
+			}
 		}
 
 		gametic++;
